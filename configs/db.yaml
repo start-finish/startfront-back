@@ -1,7 +1,0 @@
-database:
-  host: localhost
-  port: 5432
-  user: startadmin
-  password: startpassword
-  dbname: startfrontdb
-  sslmode: disable
