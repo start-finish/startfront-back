@@ -1,14 +1,14 @@
 package auth
 
 import (
-    "errors"
-    "os"
-    "time"
+	"fmt"
+	"os"
+	"time"
 
-    "github.com/golang-jwt/jwt/v5"
-    "golang.org/x/crypto/bcrypt"
-    "github.com/start-finish/startfront-app/internal/models"
-    "gorm.io/gorm"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/start-finish/startfront-app/internal/models"
+	"golang.org/x/crypto/bcrypt"
+	"gorm.io/gorm"
 )
 
 type Service struct {
@@ -20,16 +20,22 @@ func NewService(db *gorm.DB) *Service {
 }
 
 func (s *Service) Authenticate(email, password string) (*models.User, error) {
-    var user models.User
-    if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
-        return nil, errors.New("invalid credentials")
-    }
+	var user models.User
 
-    if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
-        return nil, errors.New("invalid credentials")
-    }
+	// Find user by email (or you can use username if needed)
+	if err := s.DB.Where("email = ?", email).First(&user).Error; err != nil {
+		return nil, fmt.Errorf("invalid credentials")
+	}
 
-    return &user, nil
+	// Compare hashed password with input password
+	err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password))
+	if err != nil {
+		// Password does not match
+		return nil, fmt.Errorf("invalid credentials")
+	}
+
+	// Password matches — return user
+	return &user, nil
 }
 
 func (s *Service) GenerateJWT(user *models.User) (string, error) {

@@ -1,0 +1,84 @@
+{
+    "info": {
+        "_postman_id": "12345",
+        "name": "StartFront Dynamic API Projects",
+        "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+    },
+    "item": [
+        {
+            "name": "POST /api/projects (Create)",
+            "request": {
+                "method": "POST",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"name\": \"Project A\",\n    \"description\": \"First project\",\n    \"owner_id\": 1,\n    \"is_active\": true\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8080/api/projects",
+                    "protocol": "http",
+                    "host": ["localhost"],
+                    "port": "8080",
+                    "path": ["api", "projects"]
+                }
+            }
+        },
+        {
+            "name": "GET /api/projects (List)",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://localhost:8080/api/projects",
+                    "protocol": "http",
+                    "host": ["localhost"],
+                    "port": "8080",
+                    "path": ["api", "projects"]
+                }
+            }
+        },
+        {
+            "name": "GET /api/projects/:id (Get by ID)",
+            "request": {
+                "method": "GET",
+                "url": {
+                    "raw": "http://localhost:8080/api/projects/1",
+                    "protocol": "http",
+                    "host": ["localhost"],
+                    "port": "8080",
+                    "path": ["api", "projects", "1"]
+                }
+            }
+        },
+        {
+            "name": "PATCH /api/projects/:id (Update)",
+            "request": {
+                "method": "PATCH",
+                "header": [{ "key": "Content-Type", "value": "application/json" }],
+                "body": {
+                    "mode": "raw",
+                    "raw": "{\n    \"description\": \"Updated project\",\n    \"is_active\": false\n}"
+                },
+                "url": {
+                    "raw": "http://localhost:8080/api/projects/1",
+                    "protocol": "http",
+                    "host": ["localhost"],
+                    "port": "8080",
+                    "path": ["api", "projects", "1"]
+                }
+            }
+        },
+        {
+            "name": "DELETE /api/projects/:id (Delete)",
+            "request": {
+                "method": "DELETE",
+                "url": {
+                    "raw": "http://localhost:8080/api/projects/1",
+                    "protocol": "http",
+                    "host": ["localhost"],
+                    "port": "8080",
+                    "path": ["api", "projects", "1"]
+                }
+            }
+        }
+    ]
+}

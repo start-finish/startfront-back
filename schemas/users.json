@@ -1,0 +1,47 @@
+{
+    "model": "users",
+    "fields": [
+        {
+            "name": "id",
+            "type": "uint",
+            "primary_key": true,
+            "auto_increment": true
+        },
+        {
+            "name": "email",
+            "type": "string",
+            "required": true,
+            "unique": true
+        },
+        {
+            "name": "username",
+            "type": "string",
+            "required": true,
+            "unique": true
+        },
+        {
+            "name": "password",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "role",
+            "type": "string"
+        },
+        {
+            "name": "created_at",
+            "type": "timestamp"
+        },
+        {
+            "name": "updated_at",
+            "type": "timestamp"
+        }
+    ],
+    "routes": {
+        "list": true,
+        "get": true,
+        "create": true,
+        "update": true,
+        "delete": true
+    }
+}
