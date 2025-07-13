@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv" // Add more modules here
-	"github.com/start-finish/startfront-app/internal/projects"
+	"github.com/start-finish/startfront-app/internal/users"
 	"github.com/start-finish/startfront-app/pkg"
 )
 
@@ -18,8 +18,8 @@ func main() {
 
 	// 3️⃣ Register Modules
 	pkg.Modules = []pkg.Module{
-		&projects.ProjectModule{},
-		// &users.UserModule{},
+		// &projects.ProjectModule{},
+		&users.UserModule{},
 	}
 
 	// 4️⃣ Auto Migrate All Modules

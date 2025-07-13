@@ -1,0 +1,450 @@
+{
+  "todotree": {
+    "tree": [
+      {
+        "key": 1751099723891,
+        "children": [],
+        "todo": {
+          "content": "users",
+          "id": 1751099723891,
+          "level": "default",
+          "done": false,
+          "start": 1751099723891
+        }
+      },
+      {
+        "key": 1751099733965,
+        "children": [],
+        "todo": {
+          "content": "sessions",
+          "id": 1751099733965,
+          "level": "default",
+          "done": false,
+          "start": 1751099733965
+        }
+      },
+      {
+        "key": 1751099805100,
+        "children": [],
+        "todo": {
+          "content": "applications",
+          "id": 1751099805100,
+          "level": "default",
+          "done": false,
+          "start": 1751099805100
+        }
+      },
+      {
+        "key": 1751099810780,
+        "children": [],
+        "todo": {
+          "content": "collaborators",
+          "id": 1751099810780,
+          "level": "default",
+          "done": false,
+          "start": 1751099810780
+        }
+      },
+      {
+        "key": 1751099822603,
+        "children": [],
+        "todo": {
+          "content": "app_connections",
+          "id": 1751099822603,
+          "level": "default",
+          "done": false,
+          "start": 1751099822603
+        }
+      },
+      {
+        "key": 1751099904684,
+        "children": [],
+        "todo": {
+          "content": "screens",
+          "id": 1751099904684,
+          "level": "default",
+          "done": false,
+          "start": 1751099904684
+        }
+      },
+      {
+        "key": 1751099907368,
+        "children": [],
+        "todo": {
+          "content": "widgets",
+          "id": 1751099907368,
+          "level": "default",
+          "done": false,
+          "start": 1751099907368
+        }
+      },
+      {
+        "key": 1751099911487,
+        "children": [],
+        "todo": {
+          "content": "admin_dashboard",
+          "id": 1751099911487,
+          "level": "default",
+          "done": false,
+          "start": 1751099911487
+        }
+      },
+      {
+        "key": 1751099918029,
+        "children": [],
+        "todo": {
+          "content": "client_dashboard",
+          "id": 1751099918029,
+          "level": "default",
+          "done": false,
+          "start": 1751099918029
+        }
+      },
+      {
+        "key": 1751099922751,
+        "children": [],
+        "todo": {
+          "content": "roles",
+          "id": 1751099922751,
+          "level": "default",
+          "done": false,
+          "start": 1751099922751
+        }
+      },
+      {
+        "key": 1751099925969,
+        "children": [],
+        "todo": {
+          "content": "permissions",
+          "id": 1751099925969,
+          "level": "default",
+          "done": false,
+          "start": 1751099925969
+        }
+      },
+      {
+        "key": 1751099928231,
+        "children": [],
+        "todo": {
+          "content": "role_permissions",
+          "id": 1751099928231,
+          "level": "default",
+          "done": false,
+          "start": 1751099928231
+        }
+      },
+      {
+        "key": 1751099935326,
+        "children": [],
+        "todo": {
+          "content": "widget_presets",
+          "id": 1751099935326,
+          "level": "default",
+          "done": false,
+          "start": 1751099935326
+        }
+      },
+      {
+        "key": 1751099956459,
+        "children": [],
+        "todo": {
+          "content": "navigation_menus",
+          "id": 1751099956459,
+          "level": "default",
+          "done": false,
+          "start": 1751099956459
+        }
+      },
+      {
+        "key": 1751099964458,
+        "children": [],
+        "todo": {
+          "content": "app_versions",
+          "id": 1751099964458,
+          "level": "default",
+          "done": false,
+          "start": 1751099964458
+        }
+      },
+      {
+        "key": 1751099971344,
+        "children": [],
+        "todo": {
+          "content": "theme_configs",
+          "id": 1751099971344,
+          "level": "default",
+          "done": false,
+          "start": 1751099971344
+        }
+      },
+      {
+        "key": 1751099979111,
+        "children": [],
+        "todo": {
+          "content": "assets",
+          "id": 1751099979111,
+          "level": "default",
+          "done": false,
+          "start": 1751099979111
+        }
+      },
+      {
+        "key": 1751099983038,
+        "children": [],
+        "todo": {
+          "content": "api_manager_configs",
+          "id": 1751099983038,
+          "level": "default",
+          "done": false,
+          "start": 1751099983038
+        }
+      },
+      {
+        "key": 1751099995832,
+        "children": [],
+        "todo": {
+          "content": "feedbacks",
+          "id": 1751099995832,
+          "level": "default",
+          "done": false,
+          "start": 1751099995832
+        }
+      },
+      {
+        "key": 1751099999154,
+        "children": [],
+        "todo": {
+          "content": "platform_analytics",
+          "id": 1751099999154,
+          "level": "default",
+          "done": false,
+          "start": 1751099999154
+        }
+      },
+      {
+        "key": 1751100007756,
+        "children": [],
+        "todo": {
+          "content": "admin_dashboard_metrics",
+          "id": 1751100007756,
+          "level": "default",
+          "done": false,
+          "start": 1751100007756
+        }
+      },
+      {
+        "key": 1751100036206,
+        "children": [],
+        "todo": {
+          "content": "system_settings",
+          "id": 1751100036206,
+          "level": "default",
+          "done": false,
+          "start": 1751100036206
+        }
+      },
+      {
+        "key": 1751100045386,
+        "children": [],
+        "todo": {
+          "content": "client_projects",
+          "id": 1751100045386,
+          "level": "default",
+          "done": false,
+          "start": 1751100045386
+        }
+      },
+      {
+        "key": 1751100055268,
+        "children": [],
+        "todo": {
+          "content": "screen_exports",
+          "id": 1751100055268,
+          "level": "default",
+          "done": false,
+          "start": 1751100055268
+        }
+      },
+      {
+        "key": 1751100060379,
+        "children": [],
+        "todo": {
+          "content": "widget_properties",
+          "id": 1751100060379,
+          "level": "default",
+          "done": false,
+          "start": 1751100060379
+        }
+      },
+      {
+        "key": 1751100076024,
+        "children": [],
+        "todo": {
+          "content": "widget_palette",
+          "id": 1751100076024,
+          "level": "default",
+          "done": false,
+          "start": 1751100076025
+        }
+      },
+      {
+        "key": 1751100083320,
+        "children": [],
+        "todo": {
+          "content": "release_notes",
+          "id": 1751100083320,
+          "level": "default",
+          "done": false,
+          "start": 1751100083320
+        }
+      },
+      {
+        "key": 1751100090782,
+        "children": [],
+        "todo": {
+          "content": "profile_settings",
+          "id": 1751100090782,
+          "level": "default",
+          "done": false,
+          "start": 1751100090782
+        }
+      },
+      {
+        "key": 1751100096095,
+        "children": [],
+        "todo": {
+          "content": "account_settings",
+          "id": 1751100096095,
+          "level": "default",
+          "done": false,
+          "start": 1751100096095
+        }
+      },
+      {
+        "key": 1751100103276,
+        "children": [],
+        "todo": {
+          "content": "widget_change_logs",
+          "id": 1751100103276,
+          "level": "default",
+          "done": false,
+          "start": 1751100103276
+        }
+      },
+      {
+        "key": 1751100109290,
+        "children": [],
+        "todo": {
+          "content": "screen_comments",
+          "id": 1751100109290,
+          "level": "default",
+          "done": false,
+          "start": 1751100109290
+        }
+      },
+      {
+        "key": 1751100115360,
+        "children": [],
+        "todo": {
+          "content": "coment_replies",
+          "id": 1751100115360,
+          "level": "default",
+          "done": false,
+          "start": 1751100115360
+        }
+      },
+      {
+        "key": 1751100120486,
+        "children": [],
+        "todo": {
+          "content": "editing_sessions",
+          "id": 1751100120486,
+          "level": "default",
+          "done": false,
+          "start": 1751100120486
+        }
+      },
+      {
+        "key": 1751100131057,
+        "children": [],
+        "todo": {
+          "content": "widget_locks",
+          "id": 1751100131057,
+          "level": "default",
+          "done": false,
+          "start": 1751100131057
+        }
+      },
+      {
+        "key": 1751100135397,
+        "children": [],
+        "todo": {
+          "content": "user_devices",
+          "id": 1751100135397,
+          "level": "default",
+          "done": false,
+          "start": 1751100135397
+        }
+      },
+      {
+        "key": 1751100139664,
+        "children": [],
+        "todo": {
+          "content": "user_activity_logs",
+          "id": 1751100139664,
+          "level": "default",
+          "done": false,
+          "start": 1751100139664
+        }
+      },
+      {
+        "key": 1751100148372,
+        "children": [],
+        "todo": {
+          "content": "notifications",
+          "id": 1751100148372,
+          "level": "default",
+          "done": false,
+          "start": 1751100148372
+        }
+      },
+      {
+        "key": 1751100151860,
+        "children": [],
+        "todo": {
+          "content": "notification_preferences",
+          "id": 1751100151860,
+          "level": "default",
+          "done": false,
+          "start": 1751100151860
+        }
+      },
+      {
+        "key": 1751100165920,
+        "children": [],
+        "todo": {
+          "content": "notification_channels",
+          "id": 1751100165920,
+          "level": "default",
+          "done": false,
+          "start": 1751100165920
+        }
+      }
+    ],
+    "expandKeys": [
+      1751099733965
+    ],
+    "schema": "https://github.com/Saber2pr/vsc-ext-todolist/blob/master/src/api/type.ts#L3",
+    "add_mode": "bottom",
+    "virtual": false,
+    "timelines": [],
+    "showLine": false,
+    "playFontSize": 24,
+    "title": "todo",
+    "autoSort": false,
+    "showEndTime": false,
+    "simpleMode": false,
+    "lang": "en",
+    "version": "1751100187850"
+  }
+}

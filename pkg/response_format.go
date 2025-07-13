@@ -8,7 +8,7 @@ type Response struct {
 	Data    interface{} `json:"data,omitempty"`
 }
 
-func success(c *gin.Context, message string, data interface{}) {
+func Success(c *gin.Context, message string, data interface{}) {
 	if message == "" {
 		message = "success"
 	}
@@ -19,8 +19,8 @@ func success(c *gin.Context, message string, data interface{}) {
 	})
 }
 
-func errorWithStatus(c *gin.Context, message string) {
-	c.JSON(200, Response{
+func ErrorWithStatus(c *gin.Context, message string) {
+	c.JSON(400, Response{
 		Code:    "1",
 		Message: message,
 	})
