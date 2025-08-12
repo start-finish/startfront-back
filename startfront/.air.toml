@@ -1,0 +1,16 @@
+# Air live-reload config
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/main ./cmd/server"
+bin = "./tmp/main"
+delay = 1000
+exclude_dir = ["tmp", "vendor", ".git"]
+
+[log]
+color = true
+time = true
+
+[screen]
+clear_on_rebuild = true
