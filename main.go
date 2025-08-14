@@ -38,7 +38,7 @@ var initCmd = &cobra.Command{
 }
 
 func createProjectStructure(name string) error {
-	// Create folders
+	// Create necessary directories
 	dirs := []string{
 		filepath.Join(name, "cmd", "server"),
 		filepath.Join(name, "config"),
@@ -52,7 +52,7 @@ func createProjectStructure(name string) error {
 		}
 	}
 
-	// cmd/server/main.go
+	// Write cmd/server/main.go
 	mainFile := fmt.Sprintf(`package main
 
 import (
@@ -86,34 +86,40 @@ func main() {
 		return fmt.Errorf("write main.go: %w", err)
 	}
 
-	// config/config.go
+	// Write config/config.go
 	configFile := `package config
 
 import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
+	"gorm.io/gorm/schema"
 )
 
 func ConnectDB() (*gorm.DB, error) {
 	dsn := "host=localhost user=postgres password=123 dbname=testdb port=5432 sslmode=disable"
-	return gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	return gorm.Open(postgres.Open(dsn), &gorm.Config{
+		NamingStrategy: schema.NamingStrategy{
+			SingularTable: true, // Model Home => table "home" (not "homes")
+		},
+	})
 }`
 	if err := os.WriteFile(filepath.Join(name, "config", "config.go"), []byte(configFile), 0o644); err != nil {
 		return fmt.Errorf("write config.go: %w", err)
 	}
 
-	// models/user.go
+	// Write models/user.go
 	userModel := "package models\n\n" +
 		"type User struct {\n" +
 		"\tID       uint   `json:\"id\" gorm:\"primaryKey\"`\n" +
 		"\tUsername string `json:\"username\"`\n" +
 		"\tPassword string `json:\"password\"`\n" +
-		"}\n"
+		"}\n\n" +
+		"func (User) TableName() string { return \"user\" }\n"
 	if err := os.WriteFile(filepath.Join(name, "models", "user.go"), []byte(userModel), 0o644); err != nil {
 		return fmt.Errorf("write models/user.go: %w", err)
 	}
 
-	// router/router.go
+	// Write router/router.go
 	routerFile := `package router
 
 import (
@@ -160,7 +166,7 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 		return fmt.Errorf("write router.go: %w", err)
 	}
 
-	// .air.toml
+	// Write .air.toml
 	airToml := `# Air live-reload config
 root = "."
 tmp_dir = "tmp"
@@ -182,7 +188,7 @@ clear_on_rebuild = true
 		return fmt.Errorf("write .air.toml: %w", err)
 	}
 
-	// .gitignore
+	// Write .gitignore
 	gitignore := "tmp/\n*.log\n"
 	if err := os.WriteFile(filepath.Join(name, ".gitignore"), []byte(gitignore), 0o644); err != nil {
 		return fmt.Errorf("write .gitignore: %w", err)
@@ -214,44 +220,226 @@ var createApiCmd = &cobra.Command{
 	},
 }
 
+// -------- generate HANDLERS for CRUD operations in one file ----------
 func createHandler(name string) error {
 	title := strings.Title(name)
-	upper := strings.ToUpper(name)
 
-	// Handler template: returns status error on invalid JSON, statusOK otherwise
-	code := fmt.Sprintf(`package handlers
+	// module name for imports
+	moduleName := readModuleName(".")
+	if moduleName == "" {
+		if wd, _ := os.Getwd(); wd != "" {
+			moduleName = filepath.Base(wd)
+		}
+	}
+
+	// Create a single file for all CRUD handlers
+	handlerCode := fmt.Sprintf(`package handlers
 
 import (
 	"encoding/json"
 	"net/http"
-
+	"strings"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"%s/models"
 )
 
-func Handle%[1]s(db *gorm.DB, data json.RawMessage, c *gin.Context) {
-	// Example: validate JSON body (optional)
-	var payload map[string]interface{}
+func Handle%[2]sGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		ID     uint   `+"`json:\"id\"`"+`
+		Name   string `+"`json:\"name\"`"+`
+		Status string `+"`json:\"status\"`"+`
+	}
+
 	if len(data) > 0 {
-		if err := json.Unmarshal(data, &payload); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"status": "error",
-				"error":  "invalid request data: " + err.Error(),
-			})
+		if err := json.Unmarshal(data, &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
 			return
 		}
 	}
 
-	// TODO: add your DB logic with 'db' here
+	// ID is required
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' is required"})
+		return
+	}
+
+	// Build query dynamically based on available parameters
+	var m models.%[2]s
+	query := db.Model(&models.%[2]s{}).Where("id = ?", req.ID)
+
+	// Apply dynamic filters (Name, Status, etc.)
+	if req.Name != "" {
+		query = query.Where("name ILIKE ?", "%%"+req.Name+"%%")
+	}
+
+	// Fetch the record based on ID and optional filters
+	if err := query.First(&m).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	// Return the record
+	c.JSON(http.StatusOK, gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "%[1]s API (get by ID or other params)",
+		"data":    m,
+	})
+
+}
+
+func Handle%[2]sList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		Page   *int    `+"`json:\"page\"`"+`
+		Limit  *int    `+"`json:\"limit\"`"+`
+		Search *string `+"`json:\"search\"`"+`
+	}
+
+	if len(data) > 0 {
+		if err := json.Unmarshal(data, &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
+			return
+		}
+	}
+
+	page := 1
+	limit := 10
+	if req.Page != nil && *req.Page > 0 { page = *req.Page }
+	if req.Limit != nil && *req.Limit > 0 && *req.Limit <= 200 { limit = *req.Limit }
+	offset := (page-1)*limit
+
+	q := db.Model(&models.%[2]s{})
+	if req.Search != nil && strings.TrimSpace(*req.Search) != "" {
+		q = q.Where("name ILIKE ?", "%%"+strings.TrimSpace(*req.Search)+"%%")
+	}
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	var items []models.%[2]s
+	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	response := gin.H{
+		"code":   "0",
+		"status": "Success",
+		"message": "%[1]s API (list)",
+		"meta": gin.H{"page": page, "limit": limit, "total": total},
+	}
+	if len(items) > 0 {
+		response["data"] = items
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func Handle%[2]sInsert(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req models.%[2]s
+	if err := json.Unmarshal(data, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
+		return
+	}
+
+	if err := db.Create(&req).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"status": "ok",
-		"msg":    "%[2]s API working",
+		"code":   "0",
+		"status": "Success",
+		"message": "%[1]s API (inserted)",
+		"data":   req,
 	})
 }
-`, title, upper)
 
-	if err := os.WriteFile(filepath.Join("handlers", name+".go"), []byte(code), 0o644); err != nil {
+func Handle%[2]sUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		ID     uint   `+"`json:\"id\"`"+`
+		Name   string `+"`json:\"name\"`"+`
+	}
+
+	if err := json.Unmarshal(data, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
+		return
+	}
+
+	// ID is required
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' is required"})
+		return
+	}
+
+	// Fetch the record by ID
+	var m models.%[2]s
+	if err := db.First(&m, req.ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	// Update fields if provided
+	if req.Name != "" {
+		m.Name = req.Name
+	}
+
+	// Save the updated record
+	if err := db.Save(&m).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	// Return the updated record
+	c.JSON(http.StatusOK, gin.H{
+		"code":   "0",
+		"status": "Success",
+		"message": "%[1]s API (updated)",
+		"data":   m,
+	})
+}
+
+func Handle%[2]sDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		ID uint `+"`json:\"id\"`"+`
+	}
+
+	if err := json.Unmarshal(data, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
+		return
+	}
+
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' is required"})
+		return
+	}
+
+	if err := db.Delete(&models.%[2]s{}, req.ID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":   "0",
+		"status": "Success",
+		"message": "%[1]s API (deleted)",
+	})
+}
+`, moduleName, title)
+
+	if err := os.WriteFile(filepath.Join("handlers", name+".go"), []byte(handlerCode), 0o644); err != nil {
 		return fmt.Errorf("write handlers/%s.go: %w", name, err)
 	}
 	return nil
@@ -259,12 +447,18 @@ func Handle%[1]s(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 func createModel(name string) error {
 	title := strings.Title(name)
-	code := "package models\n\n" +
-		"// " + title + " is a sample model you can modify or remove.\n" +
-		"type " + title + " struct {\n" +
-		"\tID   uint   `json:\"id\" gorm:\"primaryKey\"`\n" +
-		"\tName string `json:\"name\"`\n" +
-		"}\n"
+	code := fmt.Sprintf(`package models
+
+// %[1]s is a sample model you can modify or remove.
+type %[1]s struct {
+	ID   uint   `+"`json:\"id\" gorm:\"primaryKey\"`"+`
+	Name string `+"`json:\"name\"`"+`
+}
+
+// Force GORM to use the singular table name "%[2]s".
+func (%[1]s) TableName() string { return "%[2]s" }
+`, title, name)
+
 	if err := os.WriteFile(filepath.Join("models", name+".go"), []byte(code), 0o644); err != nil {
 		return fmt.Errorf("write models/%s.go: %w", name, err)
 	}
@@ -272,14 +466,17 @@ func createModel(name string) error {
 }
 
 func updateRouter(name string) error {
-	path := filepath.Join("router", "router.go")
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	content := string(b)
+	// Define the path for the router.go file
+	routerFilePath := filepath.Join("router", "router.go")
 
-	// ensure handlers import exists using module name from go.mod
+	// Read the existing content of router.go
+	routerFile, err := os.ReadFile(routerFilePath)
+	if err != nil {
+		return fmt.Errorf("read router.go: %w", err)
+	}
+	content := string(routerFile)
+
+	// Ensure handlers import exists using the module name from go.mod
 	moduleName := readModuleName(".")
 	if moduleName == "" {
 		if wd, _ := os.Getwd(); wd != "" {
@@ -291,13 +488,25 @@ func updateRouter(name string) error {
 		content = injectImport(content, handlersImport)
 	}
 
-	// inject into MsgHandlers map
-	mapLine := fmt.Sprintf(`"%s": handlers.Handle%s,`, strings.ToUpper(name), strings.Title(name))
+	// Capitalize the name for handler registration
+	handlerName := strings.Title(name)
+	upName := strings.ToUpper(name)
 
+	// Register handlers for each action (get, list, create, update, delete)
+	handlerRegistration := fmt.Sprintf(`
+	// %s API
+	"%s_get" : handlers.Handle%sGet,
+	"%s_list" : handlers.Handle%sList,
+	"%s_create" : handlers.Handle%sInsert,
+	"%s_update" : handlers.Handle%sUpdate,
+	"%s_delete" : handlers.Handle%sDelete,
+`, upName, upName, handlerName, upName, handlerName, upName, handlerName, upName, handlerName, upName, handlerName)
+
+	// Inject the handler registration code into the MsgHandlers map
 	if strings.Contains(content, "var MsgHandlers = map[string]MsgHandler{}") {
 		content = strings.Replace(content,
 			"var MsgHandlers = map[string]MsgHandler{}",
-			"var MsgHandlers = map[string]MsgHandler{\n\t"+mapLine+"\n}",
+			"var MsgHandlers = map[string]MsgHandler{\n\t"+handlerRegistration+"\n}",
 			1)
 	} else {
 		const anchor = "var MsgHandlers = map[string]MsgHandler{"
@@ -311,12 +520,13 @@ func updateRouter(name string) error {
 			return fmt.Errorf("could not find end of MsgHandlers map")
 		}
 		before := content[:idx+len(anchor)]
-		middle := "\n\t" + mapLine + after[:closeIdx]
+		middle := "\n\t" + handlerRegistration + after[:closeIdx]
 		rest := after[closeIdx:]
 		content = before + middle + rest
 	}
 
-	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+	// Write the updated content back to the router.go file
+	if err := os.WriteFile(routerFilePath, []byte(content), 0o644); err != nil {
 		return fmt.Errorf("write router.go: %w", err)
 	}
 	return nil
@@ -375,7 +585,6 @@ func readModuleName(dir string) string {
 	return ""
 }
 
-// ---------------- MAIN ENTRY ----------------
 func main() {
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(createApiCmd)

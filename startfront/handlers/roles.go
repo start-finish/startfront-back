@@ -2,17 +2,17 @@ package handlers
 
 import (
 	"encoding/json"
-	"net/http"
-	"strings"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
+	"net/http"
 	"startfront/models"
+	"strings"
 )
 
-func HandleHomeGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+func HandleRolesGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
 		ID     uint   `json:"id"`
-		Name   string `json:"name"`
+		RoleName   string `json:"role_name"`
 	}
 
 	if len(data) > 0 {
@@ -29,12 +29,12 @@ func HandleHomeGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	// Build query dynamically based on available parameters
-	var m models.Home
-	query := db.Model(&models.Home{}).Where("id = ?", req.ID)
+	var m models.Roles
+	query := db.Model(&models.Roles{}).Where("id = ?", req.ID)
 
 	// Apply dynamic filters (Name, Status, etc.)
-	if req.Name != "" {
-		query = query.Where("name ILIKE ?", "%"+req.Name+"%")
+	if req.RoleName != "" {
+		query = query.Where("role_name ILIKE ?", "%"+req.RoleName+"%")
 	}
 
 	// Fetch the record based on ID and optional filters
@@ -57,7 +57,7 @@ func HandleHomeGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 }
 
-func  HandleHomeList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+func HandleRolesList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
 		Page   *int    `json:"page"`
 		Limit  *int    `json:"limit"`
@@ -73,11 +73,15 @@ func  HandleHomeList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 	page := 1
 	limit := 10
-	if req.Page != nil && *req.Page > 0 { page = *req.Page }
-	if req.Limit != nil && *req.Limit > 0 && *req.Limit <= 200 { limit = *req.Limit }
-	offset := (page-1)*limit
+	if req.Page != nil && *req.Page > 0 {
+		page = *req.Page
+	}
+	if req.Limit != nil && *req.Limit > 0 && *req.Limit <= 200 {
+		limit = *req.Limit
+	}
+	offset := (page - 1) * limit
 
-	q := db.Model(&models.Home{})
+	q := db.Model(&models.Roles{})
 	if req.Search != nil && strings.TrimSpace(*req.Search) != "" {
 		q = q.Where("name ILIKE ?", "%"+strings.TrimSpace(*req.Search)+"%")
 	}
@@ -88,17 +92,17 @@ func  HandleHomeList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
-	var items []models.Home
+	var items []models.Roles
 	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
 
 	response := gin.H{
-		"code":   "0",
-		"status": "Success",
+		"code":    "0",
+		"status":  "Success",
 		"message": "startfront API (list)",
-		"meta": gin.H{"page": page, "limit": limit, "total": total},
+		"meta":    gin.H{"page": page, "limit": limit, "total": total},
 	}
 	if len(items) > 0 {
 		response["data"] = items
@@ -107,8 +111,8 @@ func  HandleHomeList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
-func HandleHomeInsert(db *gorm.DB, data json.RawMessage, c *gin.Context) {
-	var req models.Home
+func HandleRolesInsert(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req models.Roles
 	if err := json.Unmarshal(data, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
 		return
@@ -120,18 +124,17 @@ func HandleHomeInsert(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":   "0",
-		"status": "Success",
+		"code":    "0",
+		"status":  "Success",
 		"message": "startfront API (inserted)",
-		"data":   req,
+		"data":    req,
 	})
 }
 
-func HandleHomeUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+func HandleRolesUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
-		ID     uint   `json:"id"`
-		Name   string `json:"name"`
-		Status string `json:"status"`
+		ID       uint   `json:"id"`
+		RoleName string `json:"role_name"`
 	}
 
 	if err := json.Unmarshal(data, &req); err != nil {
@@ -146,7 +149,7 @@ func HandleHomeUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	// Fetch the record by ID
-	var m models.Home
+	var m models.Roles
 	if err := db.First(&m, req.ID).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
@@ -157,8 +160,8 @@ func HandleHomeUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	// Update fields if provided
-	if req.Name != "" {
-		m.Name = req.Name
+	if req.RoleName != "" {
+		m.RoleName = req.RoleName
 	}
 
 	// Save the updated record
@@ -169,14 +172,14 @@ func HandleHomeUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 	// Return the updated record
 	c.JSON(http.StatusOK, gin.H{
-		"code":   "0",
-		"status": "Success",
+		"code":    "0",
+		"status":  "Success",
 		"message": "startfront API (updated)",
-		"data":   m,
+		"data":    m,
 	})
 }
 
-func HandleHomeDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+func HandleRolesDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
 		ID uint `json:"id"`
 	}
@@ -191,14 +194,14 @@ func HandleHomeDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
-	if err := db.Delete(&models.Home{}, req.ID).Error; err != nil {
+	if err := db.Delete(&models.Roles{}, req.ID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":   "0",
-		"status": "Success",
+		"code":    "0",
+		"status":  "Success",
 		"message": "startfront API (deleted)",
 	})
 }

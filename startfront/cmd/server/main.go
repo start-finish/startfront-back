@@ -16,7 +16,7 @@ func main() {
 	}
 
 	// migrate base models
-	if err := db.Migrator().AutoMigrate(&models.User{}); err != nil {
+	if err := db.Migrator().AutoMigrate(&models.Users{}); err != nil {
 		log.Fatal(err)
 	}
 

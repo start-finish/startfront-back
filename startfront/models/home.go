@@ -1,12 +1,10 @@
 package models
 
-import "time"
-
+// Home is a sample model you can modify or remove.
 type Home struct {
-	ID         uint       `json:"id"   gorm:"column:id;primaryKey"`
-	Name       string     `json:"name" gorm:"column:name"`
-	CreateTime *time.Time `json:"create_time,omitempty" gorm:"column:create_time"`
+	ID   uint   `json:"id" gorm:"primaryKey"`
+	Name string `json:"name"`
 }
 
-// Force GORM to use the singular table
+// Force GORM to use the singular table name "home".
 func (Home) TableName() string { return "home" }
