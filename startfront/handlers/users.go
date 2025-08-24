@@ -25,6 +25,7 @@ func ComparePassword(storedHash, password string) bool {
 
 func HandleLogin(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
+		Email    string `json:"email"`
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
@@ -36,29 +37,57 @@ func HandleLogin(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		}
 	}
 
-	// Fetch user by username
+	req.Email = strings.TrimSpace(req.Email)
+	req.Username = strings.TrimSpace(req.Username)
+	req.Password = strings.TrimSpace(req.Password)
+
+	// Require at least one identifier + a password
+	if (req.Username == "" && req.Email == "") || req.Password == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": "1", "status": "error",
+			"error": "username or email, and password are required",
+		})
+		return
+	}
+
+	// Build query: username OR email (if both provided)
 	var m models.Users
-	if err := db.Where("username = ?", req.Username).First(&m).Error; err != nil {
+	q := db.Model(&models.Users{})
+	if req.Username != "" && req.Email != "" {
+		q = q.Where("username = ? OR email = ?", req.Username, req.Email)
+	} else if req.Username != "" {
+		q = q.Where("username = ?", req.Username)
+	} else {
+		q = q.Where("email = ?", req.Email)
+	}
+
+	// Fetch user (use generic error to avoid revealing which field failed)
+	if err := q.First(&m).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
-			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "user not found"})
+			c.JSON(http.StatusUnauthorized, gin.H{"code": "1", "status": "error", "error": "invalid credentials"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
 
-	// Compare the password
-	if !ComparePassword(m.Password, req.Password) {
-		c.JSON(http.StatusUnauthorized, gin.H{"code": "1", "status": "error", "error": "invalid password"})
+	// Optional: require active status
+	if strings.TrimSpace(strings.ToLower(m.Status)) != "" && strings.ToLower(m.Status) != "active" {
+		c.JSON(http.StatusForbidden, gin.H{"code": "1", "status": "error", "error": "account is not active"})
 		return
 	}
 
-	// Return Users info
+	// Check password
+	if !ComparePassword(m.Password, req.Password) {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": "1", "status": "error", "error": "invalid credentials"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    "0",
 		"status":  "Success",
 		"message": "login successful",
-		// "data":    m,
+		"data": m, // include if you want
 	})
 }
 
@@ -69,7 +98,28 @@ func HandleSignUp(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
-	// Hash the password before saving to the database
+	// Require username, email, password
+	req.Username = strings.TrimSpace(req.Username)
+	req.Email = strings.TrimSpace(req.Email)
+	if req.Username == "" || req.Email == "" || strings.TrimSpace(req.Password) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"code": "1", "status": "error",
+			"error": "username, email, and password are required",
+		})
+		return
+	}
+
+	// Optional: pre-check for duplicates to return friendlier errors
+	var cnt int64
+	if err := db.Model(&models.Users{}).Where("username = ?", req.Username).Or("email = ?", req.Email).Count(&cnt).Error; err == nil && cnt > 0 {
+		c.JSON(http.StatusConflict, gin.H{
+			"code": "1", "status": "error",
+			"error": "username or email already exists",
+		})
+		return
+	}
+
+	// Hash password
 	hashedPassword, err := HashPassword(req.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": "failed to hash password: " + err.Error()})
@@ -77,14 +127,19 @@ func HandleSignUp(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 	req.Password = hashedPassword
 
+	// Default status
+	if strings.TrimSpace(req.Status) == "" {
+		req.Status = "active"
+	}
+
+	// Insert
 	if err := db.Create(&req).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"code":    "0",
-		"status":  "Success",
+		"code": "0", "status": "Success",
 		"message": "Users created successfully",
 		"data":    req,
 	})
@@ -147,7 +202,7 @@ func HandleUsersList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 func HandleUsersUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
 		ID       uint   `json:"id"`
-		Username     string `json:"username"`
+		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 
@@ -207,19 +262,22 @@ func HandleUsersDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
 		ID uint `json:"id"`
 	}
-
 	if err := json.Unmarshal(data, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
 		return
 	}
-
 	if req.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' is required"})
 		return
 	}
 
-	if err := db.Delete(&models.Users{}, req.ID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+	res := db.Delete(&models.Users{}, req.ID)
+	if res.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": res.Error.Error()})
+		return
+	}
+	if res.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
 		return
 	}
 

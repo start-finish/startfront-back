@@ -11,8 +11,8 @@ import (
 
 func HandleRolesGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
-		ID     uint   `json:"id"`
-		RoleName   string `json:"role_name"`
+		ID       uint   `json:"id"`
+		RoleName string `json:"role_name"`
 	}
 
 	if len(data) > 0 {
@@ -183,19 +183,22 @@ func HandleRolesDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
 		ID uint `json:"id"`
 	}
-
 	if err := json.Unmarshal(data, &req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
 		return
 	}
-
 	if req.ID == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' is required"})
 		return
 	}
 
-	if err := db.Delete(&models.Roles{}, req.ID).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+	res := db.Delete(&models.Roles{}, req.ID)
+	if res.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": res.Error.Error()})
+		return
+	}
+	if res.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
 		return
 	}
 

@@ -2,9 +2,11 @@ package models
 
 // Users is a sample model you can modify or remove.
 type Users struct {
-	ID   uint   `json:"id" gorm:"primaryKey"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	ID       uint   `json:"id" gorm:"primaryKey"`
+	Email    string `json:"email"    gorm:"uniqueIndex"` // no custom name
+	Username string `json:"username" gorm:"uniqueIndex"` // no custom name
+	Password string `json:"-"`
+	Status   string `json:"status" gorm:"default:'active'"`
 }
 
 // Force GORM to use the singular table name "users".

@@ -1,0 +1,95 @@
+{
+  "todotree": {
+    "tree": [
+      {
+        "key": 1755312697430,
+        "children": [],
+        "todo": {
+          "content": "users",
+          "id": 1755312697430,
+          "level": "success",
+          "done": true,
+          "start": 1755312697431,
+          "focus": false,
+          "end": 1755312755484
+        }
+      },
+      {
+        "key": 1755312773676,
+        "children": [],
+        "todo": {
+          "content": "roles",
+          "id": 1755312773675,
+          "level": "default",
+          "done": true,
+          "start": 1755312773675,
+          "focus": false,
+          "end": 1755312832228
+        }
+      },
+      {
+        "key": 1755312817308,
+        "children": [],
+        "todo": {
+          "content": "users_roles",
+          "id": 1755312817308,
+          "level": "default",
+          "done": true,
+          "start": 1755312817309,
+          "focus": false,
+          "end": 1755312831811
+        }
+      },
+      {
+        "key": 1755585418130,
+        "children": [],
+        "todo": {
+          "content": "permissions",
+          "id": 1755585418130,
+          "level": "default",
+          "done": true,
+          "start": 1755585418130,
+          "focus": false,
+          "end": 1755792659366
+        }
+      },
+      {
+        "key": 1755585425544,
+        "children": [],
+        "todo": {
+          "content": "role_permissions",
+          "id": 1755585425544,
+          "level": "default",
+          "done": false,
+          "start": 1755585425544
+        }
+      },
+      {
+        "key": 1755312823597,
+        "children": [],
+        "todo": {
+          "content": "admin_dashboard",
+          "id": 1755312823597,
+          "level": "default",
+          "done": false,
+          "start": 1755312823597
+        }
+      }
+    ],
+    "expandKeys": [
+      1755312697430
+    ],
+    "schema": "https://github.com/Saber2pr/vsc-ext-todolist/blob/master/src/api/type.ts#L3",
+    "add_mode": "bottom",
+    "virtual": false,
+    "timelines": [],
+    "showLine": false,
+    "playFontSize": 24,
+    "title": "api",
+    "autoSort": false,
+    "showEndTime": false,
+    "simpleMode": false,
+    "lang": "en",
+    "version": "1755792665801"
+  }
+}
