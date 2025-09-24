@@ -3,8 +3,8 @@ package models
 // Users is a sample model you can modify or remove.
 type Users struct {
 	ID       uint   `json:"id" gorm:"primaryKey"`
-	Email    string `json:"email"    gorm:"uniqueIndex"` // no custom name
-	Username string `json:"username" gorm:"uniqueIndex"` // no custom name
+	Email    string `json:"email"    gorm:"uniqueIndex"`
+	Username string `json:"username" gorm:"uniqueIndex"`
 	Password string `json:"-"`
 	Status   string `json:"status" gorm:"default:'active'"`
 }

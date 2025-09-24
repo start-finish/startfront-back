@@ -3,7 +3,6 @@ package router
 import (
 	"encoding/json"
 	"net/http"
-
 	"startfront/handlers"
 
 	"github.com/gin-gonic/gin"
@@ -19,6 +18,49 @@ type MsgHandler func(*gorm.DB, json.RawMessage, *gin.Context)
 
 // Keep empty map on init; create-api will inject entries and add handlers import
 var MsgHandlers = map[string]MsgHandler{
+	
+	// NAVIGATION_ITEMS API
+	"NAVIGATION_ITEMS_get" : handlers.HandleNavigation_itemsGet,
+	"NAVIGATION_ITEMS_list" : handlers.HandleNavigation_itemsList,
+	"NAVIGATION_ITEMS_create" : handlers.HandleNavigation_itemsInsert,
+	"NAVIGATION_ITEMS_update" : handlers.HandleNavigation_itemsUpdate,
+	"NAVIGATION_ITEMS_delete" : handlers.HandleNavigation_itemsDelete,
+
+
+	// NAVIGATION_MENUS API
+	"NAVIGATION_MENUS_get":    handlers.HandleNavigation_menusGet,
+	"NAVIGATION_MENUS_list":   handlers.HandleNavigation_menusList,
+	"NAVIGATION_MENUS_create": handlers.HandleNavigation_menusInsert,
+	"NAVIGATION_MENUS_update": handlers.HandleNavigation_menusUpdate,
+	"NAVIGATION_MENUS_delete": handlers.HandleNavigation_menusDelete,
+
+	// SCREENS API
+	"SCREENS_get":    handlers.HandleScreensGet,
+	"SCREENS_list":   handlers.HandleScreensList,
+	"SCREENS_create": handlers.HandleScreensInsert,
+	"SCREENS_update": handlers.HandleScreensUpdate,
+	"SCREENS_delete": handlers.HandleScreensDelete,
+
+	// CLIENT_USERS API
+	"CLIENT_USERS_get":    handlers.HandleClient_usersGet,
+	"CLIENT_USERS_list":   handlers.HandleClient_usersList,
+	"CLIENT_USERS_create": handlers.HandleClient_usersInsert,
+	"CLIENT_USERS_update": handlers.HandleClient_usersUpdate,
+	"CLIENT_USERS_delete": handlers.HandleClient_usersDelete,
+
+	// PROJECTS API
+	"PROJECTS_get":    handlers.HandleProjectsGet,
+	"PROJECTS_list":   handlers.HandleProjectsList,
+	"PROJECTS_create": handlers.HandleProjectsInsert,
+	"PROJECTS_update": handlers.HandleProjectsUpdate,
+	"PROJECTS_delete": handlers.HandleProjectsDelete,
+
+	// CLIENTS API
+	"CLIENTS_get":    handlers.HandleClientsGet,
+	"CLIENTS_list":   handlers.HandleClientsList,
+	"CLIENTS_create": handlers.HandleClientsInsert,
+	"CLIENTS_update": handlers.HandleClientsUpdate,
+	"CLIENTS_delete": handlers.HandleClientsDelete,
 
 	// ROLE_PERMISSIONS API
 	"ROLE_PERMISSIONS_get":    handlers.HandleRole_permissionsGet,

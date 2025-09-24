@@ -237,6 +237,7 @@ func createHandler(name string) error {
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 	"github.com/gin-gonic/gin"
@@ -350,6 +351,33 @@ func Handle%[2]sInsert(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
+	// Use reflection to check for duplicates dynamically
+	requiredFields := []struct {
+		FieldName  string
+		FieldValue interface{}
+	}{
+		{"name", req.Name},
+		// Add more required fields here, e.g., {"FieldName", req.FieldValue}
+	}
+
+	// Check for duplicates on each required field
+	for _, field := range requiredFields {
+		if field.FieldValue == "" {
+			// Skip empty fields
+			continue
+		}
+
+		var existingRecord models.%[2]s
+		if err := db.Where(fmt.Sprintf("%%s = ?", field.FieldName), field.FieldValue).First(&existingRecord).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{
+				"code":    "1",
+				"status":  "error",
+				"error":   fmt.Sprintf("duplicate field: %%s", field.FieldName),
+			})
+			return
+		}
+	}
+
 	if err := db.Create(&req).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
@@ -440,7 +468,7 @@ func Handle%[2]sDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		"message": "startfront API (deleted)",
 	})
 }
-`, moduleName, title)
+`, moduleName, title, title, title)
 
 	if err := os.WriteFile(filepath.Join("handlers", name+".go"), []byte(handlerCode), 0o644); err != nil {
 		return fmt.Errorf("write handlers/%s.go: %w", name, err)
