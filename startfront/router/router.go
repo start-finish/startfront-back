@@ -18,14 +18,27 @@ type MsgHandler func(*gorm.DB, json.RawMessage, *gin.Context)
 
 // Keep empty map on init; create-api will inject entries and add handlers import
 var MsgHandlers = map[string]MsgHandler{
-	
-	// NAVIGATION_ITEMS API
-	"NAVIGATION_ITEMS_get" : handlers.HandleNavigation_itemsGet,
-	"NAVIGATION_ITEMS_list" : handlers.HandleNavigation_itemsList,
-	"NAVIGATION_ITEMS_create" : handlers.HandleNavigation_itemsInsert,
-	"NAVIGATION_ITEMS_update" : handlers.HandleNavigation_itemsUpdate,
-	"NAVIGATION_ITEMS_delete" : handlers.HandleNavigation_itemsDelete,
 
+	// WIDGET_INSTANCES API
+	"WIDGET_INSTANCES_get":    handlers.HandleWidget_instancesGet,
+	"WIDGET_INSTANCES_list":   handlers.HandleWidget_instancesList,
+	"WIDGET_INSTANCES_create": handlers.HandleWidget_instancesInsert,
+	"WIDGET_INSTANCES_update": handlers.HandleWidget_instancesUpdate,
+	"WIDGET_INSTANCES_delete": handlers.HandleWidget_instancesDelete,
+
+	// WIDGETS API
+	"WIDGETS_get":    handlers.HandleWidgetsGet,
+	"WIDGETS_list":   handlers.HandleWidgetsList,
+	"WIDGETS_create": handlers.HandleWidgetsInsert,
+	"WIDGETS_update": handlers.HandleWidgetsUpdate,
+	"WIDGETS_delete": handlers.HandleWidgetsDelete,
+
+	// NAVIGATION_ITEMS API
+	"NAVIGATION_ITEMS_get":    handlers.HandleNavigation_itemsGet,
+	"NAVIGATION_ITEMS_list":   handlers.HandleNavigation_itemsList,
+	"NAVIGATION_ITEMS_create": handlers.HandleNavigation_itemsInsert,
+	"NAVIGATION_ITEMS_update": handlers.HandleNavigation_itemsUpdate,
+	"NAVIGATION_ITEMS_delete": handlers.HandleNavigation_itemsDelete,
 
 	// NAVIGATION_MENUS API
 	"NAVIGATION_MENUS_get":    handlers.HandleNavigation_menusGet,

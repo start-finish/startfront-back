@@ -1,0 +1,246 @@
+package handlers
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"startfront/models"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+	"gorm.io/datatypes"
+	"gorm.io/gorm"
+)
+
+func HandleWidgetsGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		ID  uint   `json:"id"`
+		Key string `json:"key"`
+	}
+
+	if len(data) > 0 {
+		if err := json.Unmarshal(data, &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: "+err.Error()})
+			return
+		}
+	}
+
+	// Either ID or Key is required
+	if req.ID == 0 && strings.TrimSpace(req.Key) == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' or 'key' is required"})
+		return
+	}
+
+	var m models.Widgets
+	query := db.Model(&models.Widgets{})
+	if req.ID > 0 {
+		query = query.Where("id = ?", req.ID)
+	}
+	if req.Key != "" {
+		query = query.Where("key = ?", strings.TrimSpace(req.Key))
+	}
+
+	if err := query.First(&m).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "Widget retrieved successfully",
+		"data":    m,
+	})
+}
+
+// ---------- LIST ----------
+func HandleWidgetsList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		Page   *int    `json:"page"`
+		Limit  *int    `json:"limit"`
+		Search *string `json:"search"`
+	}
+
+	if len(data) > 0 {
+		if err := json.Unmarshal(data, &req); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: "+err.Error()})
+			return
+		}
+	}
+
+	page := 1
+	limit := 10
+	if req.Page != nil && *req.Page > 0 {
+		page = *req.Page
+	}
+	if req.Limit != nil && *req.Limit > 0 && *req.Limit <= 200 {
+		limit = *req.Limit
+	}
+	offset := (page - 1) * limit
+
+	q := db.Model(&models.Widgets{})
+	if req.Search != nil && strings.TrimSpace(*req.Search) != "" {
+		q = q.Where("key ILIKE ?", "%"+strings.TrimSpace(*req.Search)+"%")
+	}
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	var items []models.Widgets
+	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	response := gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "Widgets list",
+		"meta":    gin.H{"page": page, "limit": limit, "total": total},
+	}
+	if len(items) > 0 {
+		response["data"] = items
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+func HandleWidgetsInsert(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req models.Widgets
+	if err := json.Unmarshal(data, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
+		return
+	}
+
+	// Use reflection to check for duplicates dynamically
+	requiredFields := []struct {
+		FieldName  string
+		FieldValue interface{}
+	}{
+		{"key", req.Key},
+		// Add more required fields here, e.g., {"FieldName", req.FieldValue}
+	}
+
+	// Check for duplicates on each required field
+	for _, field := range requiredFields {
+		if field.FieldValue == "" {
+			// Skip empty fields
+			continue
+		}
+
+		var existingRecord models.Widgets
+		if err := db.Where(fmt.Sprintf("%s = ?", field.FieldName), field.FieldValue).First(&existingRecord).Error; err == nil {
+			c.JSON(http.StatusConflict, gin.H{
+				"code":   "1",
+				"status": "error",
+				"error":  fmt.Sprintf("duplicate field: %s", field.FieldName),
+			})
+			return
+		}
+	}
+
+	if err := db.Create(&req).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "startfront API (inserted)",
+		"data":    req,
+	})
+}
+
+// ---------- UPDATE ----------
+func HandleWidgetsUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		ID           uint            `json:"id"`
+		Key          *string         `json:"key"`
+		IsBuiltin    *bool           `json:"is_builtin"`
+		Version      *string         `json:"version"`
+		ConfigSchema json.RawMessage `json:"config_schema"`
+	}
+
+	if err := json.Unmarshal(data, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: "+err.Error()})
+		return
+	}
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' is required"})
+		return
+	}
+
+	var m models.Widgets
+	if err := db.First(&m, req.ID).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	if req.Key != nil {
+		m.Key = *req.Key
+	}
+	if req.IsBuiltin != nil {
+		m.IsBuiltin = *req.IsBuiltin
+	}
+	if req.Version != nil {
+		m.Version = req.Version
+	}
+	if len(req.ConfigSchema) > 0 {
+		m.ConfigSchema = datatypes.JSON(req.ConfigSchema)
+	}
+
+	if err := db.Save(&m).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "Widget updated",
+		"data":    m,
+	})
+}
+
+// ---------- DELETE ----------
+func HandleWidgetsDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		ID uint `json:"id"`
+	}
+	if err := json.Unmarshal(data, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: "+err.Error()})
+		return
+	}
+	if req.ID == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "'id' is required"})
+		return
+	}
+
+	res := db.Delete(&models.Widgets{}, req.ID)
+	if res.Error != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": res.Error.Error()})
+		return
+	}
+	if res.RowsAffected == 0 {
+		c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "Widget deleted",
+	})
+}

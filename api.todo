@@ -138,8 +138,10 @@
           "content": "widget",
           "id": 1758700304012,
           "level": "default",
-          "done": false,
-          "start": 1758700304012
+          "done": true,
+          "start": 1758700304012,
+          "focus": false,
+          "end": 1758709138038
         }
       },
       {
@@ -149,8 +151,10 @@
           "content": "widget_instances",
           "id": 1758700358614,
           "level": "default",
-          "done": false,
-          "start": 1758700358615
+          "done": true,
+          "start": 1758700358615,
+          "focus": false,
+          "end": 1758901198054
         }
       },
       {
@@ -235,6 +239,6 @@
     "showEndTime": true,
     "simpleMode": false,
     "lang": "en",
-    "version": "1758700668748"
+    "version": "1758901198092"
   }
 }
