@@ -19,6 +19,13 @@ type MsgHandler func(*gorm.DB, json.RawMessage, *gin.Context)
 // Keep empty map on init; create-api will inject entries and add handlers import
 var MsgHandlers = map[string]MsgHandler{
 
+	// SCREEN_WIDGETS API
+	"SCREEN_WIDGETS_get":    handlers.HandleScreen_widgetsGet,
+	"SCREEN_WIDGETS_list":   handlers.HandleScreen_widgetsList,
+	"SCREEN_WIDGETS_create": handlers.HandleScreen_widgetsInsert,
+	"SCREEN_WIDGETS_update": handlers.HandleScreen_widgetsUpdate,
+	"SCREEN_WIDGETS_delete": handlers.HandleScreen_widgetsDelete,
+
 	// WIDGET_INSTANCES API
 	"WIDGET_INSTANCES_get":    handlers.HandleWidget_instancesGet,
 	"WIDGET_INSTANCES_list":   handlers.HandleWidget_instancesList,

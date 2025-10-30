@@ -164,8 +164,10 @@
           "content": "screen_widgets",
           "id": 1758700373678,
           "level": "default",
-          "done": false,
-          "start": 1758700373678
+          "done": true,
+          "start": 1758700373678,
+          "focus": false,
+          "end": 1761726655634
         }
       },
       {
@@ -176,7 +178,8 @@
           "id": 1758700382507,
           "level": "default",
           "done": false,
-          "start": 1758700382507
+          "start": 1758700382507,
+          "focus": true
         }
       },
       {
@@ -239,6 +242,6 @@
     "showEndTime": true,
     "simpleMode": false,
     "lang": "en",
-    "version": "1758901198092"
+    "version": "1761726659935"
   }
 }
