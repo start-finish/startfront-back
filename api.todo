@@ -177,9 +177,10 @@
           "content": "widget_presets",
           "id": 1758700382507,
           "level": "default",
-          "done": false,
+          "done": true,
           "start": 1758700382507,
-          "focus": true
+          "focus": false,
+          "end": 1761922849489
         }
       },
       {
@@ -189,8 +190,10 @@
           "content": "widget_preset_items",
           "id": 1758700388843,
           "level": "default",
-          "done": false,
-          "start": 1758700388843
+          "done": true,
+          "start": 1758700388843,
+          "focus": false,
+          "end": 1761924116774
         }
       },
       {
@@ -200,8 +203,10 @@
           "content": "theme",
           "id": 1758700406779,
           "level": "default",
-          "done": false,
-          "start": 1758700406779
+          "done": true,
+          "start": 1758700406779,
+          "focus": false,
+          "end": 1761924879190
         }
       },
       {
@@ -210,9 +215,11 @@
         "todo": {
           "content": "settings",
           "id": 1758700451229,
-          "level": "secondary",
-          "done": false,
-          "start": 1758700451229
+          "level": "default",
+          "done": true,
+          "start": 1758700451229,
+          "focus": false,
+          "end": 1761925819648
         }
       },
       {
@@ -221,9 +228,11 @@
         "todo": {
           "content": "analytics_events",
           "id": 1758700501626,
-          "level": "secondary",
-          "done": false,
-          "start": 1758700501626
+          "level": "default",
+          "done": true,
+          "start": 1758700501626,
+          "focus": false,
+          "end": 1761926428427
         }
       }
     ],
@@ -242,6 +251,6 @@
     "showEndTime": true,
     "simpleMode": false,
     "lang": "en",
-    "version": "1761726659935"
+    "version": "1761926428462"
   }
 }

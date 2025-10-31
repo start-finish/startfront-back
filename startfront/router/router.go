@@ -19,6 +19,41 @@ type MsgHandler func(*gorm.DB, json.RawMessage, *gin.Context)
 // Keep empty map on init; create-api will inject entries and add handlers import
 var MsgHandlers = map[string]MsgHandler{
 
+	// ANALYTICS_EVENTS API
+	"ANALYTICS_EVENTS_get":    handlers.HandleAnalytics_eventsGet,
+	"ANALYTICS_EVENTS_list":   handlers.HandleAnalytics_eventsList,
+	"ANALYTICS_EVENTS_create": handlers.HandleAnalytics_eventsInsert,
+	"ANALYTICS_EVENTS_update": handlers.HandleAnalytics_eventsUpdate,
+	"ANALYTICS_EVENTS_delete": handlers.HandleAnalytics_eventsDelete,
+
+	// SETTINGS API
+	"SETTINGS_get":    handlers.HandleSettingsGet,
+	"SETTINGS_list":   handlers.HandleSettingsList,
+	"SETTINGS_create": handlers.HandleSettingsInsert,
+	"SETTINGS_update": handlers.HandleSettingsUpdate,
+	"SETTINGS_delete": handlers.HandleSettingsDelete,
+
+	// THEMES API
+	"THEMES_get":    handlers.HandleThemesGet,
+	"THEMES_list":   handlers.HandleThemesList,
+	"THEMES_create": handlers.HandleThemesInsert,
+	"THEMES_update": handlers.HandleThemesUpdate,
+	"THEMES_delete": handlers.HandleThemesDelete,
+
+	// WIDGET_PRESET_ITEMS API
+	"WIDGET_PRESET_ITEMS_get":    handlers.HandleWidget_preset_itemsGet,
+	"WIDGET_PRESET_ITEMS_list":   handlers.HandleWidget_preset_itemsList,
+	"WIDGET_PRESET_ITEMS_create": handlers.HandleWidget_preset_itemsInsert,
+	"WIDGET_PRESET_ITEMS_update": handlers.HandleWidget_preset_itemsUpdate,
+	"WIDGET_PRESET_ITEMS_delete": handlers.HandleWidget_preset_itemsDelete,
+
+	// WIDGET_PRESETS API
+	"WIDGET_PRESETS_get":    handlers.HandleWidget_presetsGet,
+	"WIDGET_PRESETS_list":   handlers.HandleWidget_presetsList,
+	"WIDGET_PRESETS_create": handlers.HandleWidget_presetsInsert,
+	"WIDGET_PRESETS_update": handlers.HandleWidget_presetsUpdate,
+	"WIDGET_PRESETS_delete": handlers.HandleWidget_presetsDelete,
+
 	// SCREEN_WIDGETS API
 	"SCREEN_WIDGETS_get":    handlers.HandleScreen_widgetsGet,
 	"SCREEN_WIDGETS_list":   handlers.HandleScreen_widgetsList,
