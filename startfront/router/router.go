@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"startfront/handlers"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -161,6 +162,14 @@ var MsgHandlers = map[string]MsgHandler{
 }
 
 func SetupRoutes(r *gin.Engine, db *gorm.DB) {
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"*"},
+		AllowMethods:     []string{"GET", "POST"},
+		AllowHeaders:     []string{"Origin", "Content-Type"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+	}))
+
 	r.POST("/api/startProcess", func(c *gin.Context) {
 		var req Request
 		if err := c.ShouldBindJSON(&req); err != nil {
