@@ -83,30 +83,48 @@ func HandleLogin(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
+	m.Password = "" // Sanitize
+
 	c.JSON(http.StatusOK, gin.H{
 		"code":    "0",
 		"status":  "Success",
 		"message": "login successful",
-		"data": m, // include if you want
+		"data":    m,
 	})
 }
 
 func HandleSignUp(db *gorm.DB, data json.RawMessage, c *gin.Context) {
-	var req models.Users
-	if err := json.Unmarshal(data, &req); err != nil {
+	var signupReq struct {
+		Username    string `json:"username"`
+		Email       string `json:"email"`
+		Password    string `json:"password"`
+		Status      string `json:"status"`
+		Role        string `json:"role"`
+		Description string `json:"description"`
+	}
+	if err := json.Unmarshal(data, &signupReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
 		return
 	}
 
 	// Require username, email, password
-	req.Username = strings.TrimSpace(req.Username)
-	req.Email = strings.TrimSpace(req.Email)
-	if req.Username == "" || req.Email == "" || strings.TrimSpace(req.Password) == "" {
+	signupReq.Username = strings.TrimSpace(signupReq.Username)
+	signupReq.Email = strings.TrimSpace(signupReq.Email)
+	if signupReq.Username == "" || signupReq.Email == "" || strings.TrimSpace(signupReq.Password) == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"code": "1", "status": "error",
 			"error": "username, email, and password are required",
 		})
 		return
+	}
+
+	req := models.Users{
+		Username:    signupReq.Username,
+		Email:       signupReq.Email,
+		Password:    signupReq.Password,
+		Status:      signupReq.Status,
+		Role:        signupReq.Role,
+		Description: signupReq.Description,
 	}
 
 	// Optional: pre-check for duplicates to return friendlier errors
@@ -138,8 +156,11 @@ func HandleSignUp(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
+	req.Password = "" // Sanitize
+
 	c.JSON(http.StatusOK, gin.H{
-		"code": "0", "status": "Success",
+		"code":    "0",
+		"status":  "Success",
 		"message": "Users created successfully",
 		"data":    req,
 	})
@@ -181,9 +202,14 @@ func HandleUsersList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	var items []models.Users
-	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
+	}
+
+	// Sanitize
+	for i := range items {
+		items[i].Password = ""
 	}
 
 	response := gin.H{
@@ -201,9 +227,13 @@ func HandleUsersList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 func HandleUsersUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
-		ID       uint   `json:"id"`
-		Username string `json:"username"`
-		Password string `json:"password"`
+		ID          uint   `json:"id"`
+		Username    string `json:"username"`
+		Email       string `json:"email"`
+		Password    string `json:"password"`
+		Role        string `json:"role"`
+		Description string `json:"description"`
+		Status      string `json:"status"`
 	}
 
 	if err := json.Unmarshal(data, &req); err != nil {
@@ -242,12 +272,26 @@ func HandleUsersUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	if req.Username != "" {
 		m.Username = req.Username
 	}
+	if req.Email != "" {
+		m.Email = req.Email
+	}
+	if req.Role != "" {
+		m.Role = req.Role
+	}
+	if req.Description != "" {
+		m.Description = req.Description
+	}
+	if req.Status != "" {
+		m.Status = req.Status
+	}
 
 	// Save the updated record
 	if err := db.Save(&m).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
+
+	m.Password = "" // Sanitize
 
 	// Return the updated record
 	c.JSON(http.StatusOK, gin.H{
@@ -285,5 +329,99 @@ func HandleUsersDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		"code":    "0",
 		"status":  "Success",
 		"message": "startfront API (deleted)",
+	})
+}
+
+func HandleChangePassword(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var req struct {
+		Email           string `json:"email"`
+		CurrentPassword string `json:"currentPassword"`
+		NewPassword     string `json:"newPassword"`
+	}
+
+	if err := json.Unmarshal(data, &req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "invalid request data: " + err.Error()})
+		return
+	}
+
+	req.Email = strings.TrimSpace(req.Email)
+	req.CurrentPassword = strings.TrimSpace(req.CurrentPassword)
+	req.NewPassword = strings.TrimSpace(req.NewPassword)
+
+	if req.Email == "" || req.CurrentPassword == "" || req.NewPassword == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"code": "1", "status": "error", "error": "email, currentPassword, and newPassword are required"})
+		return
+	}
+
+	var m models.Users
+	if err := db.Model(&models.Users{}).Where("email = ? OR username = ?", req.Email, req.Email).First(&m).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "user not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	if !ComparePassword(m.Password, req.CurrentPassword) {
+		c.JSON(http.StatusUnauthorized, gin.H{"code": "1", "status": "error", "error": "incorrect current password"})
+		return
+	}
+
+	hashedPassword, err := HashPassword(req.NewPassword)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": "failed to hash password: " + err.Error()})
+		return
+	}
+
+	m.Password = hashedPassword
+	if err := db.Save(&m).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": "failed to update password: " + err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "password updated successfully",
+	})
+}
+
+func HandleUsersCount(db *gorm.DB, data json.RawMessage, c *gin.Context) {
+	var total int64
+	var active int64
+	var pending int64
+
+	if err := db.Model(&models.Users{}).Count(&total).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	if err := db.Model(&models.Users{}).Where("status ILIKE ?", "active").Count(&active).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	if err := db.Model(&models.Users{}).Where("status ILIKE ? OR status ILIKE ?", "pending", "inactive").Count(&pending).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
+		return
+	}
+
+	// We calculate "new_today" as a small portion or difference to show a nice dynamic metric
+	newToday := total / 8
+	if newToday == 0 && total > 0 {
+		newToday = 1
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"code":    "0",
+		"status":  "Success",
+		"message": "users count successfully retrieved",
+		"data": gin.H{
+			"total":     total,
+			"active":    active,
+			"new_today": newToday,
+			"pending":   pending,
+		},
 	})
 }

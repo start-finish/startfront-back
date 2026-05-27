@@ -83,7 +83,7 @@ func HandleRolesList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 	q := db.Model(&models.Roles{})
 	if req.Search != nil && strings.TrimSpace(*req.Search) != "" {
-		q = q.Where("name ILIKE ?", "%"+strings.TrimSpace(*req.Search)+"%")
+		q = q.Where("role_name ILIKE ?", "%"+strings.TrimSpace(*req.Search)+"%")
 	}
 
 	var total int64
@@ -93,7 +93,7 @@ func HandleRolesList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	var items []models.Roles
-	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
@@ -133,8 +133,11 @@ func HandleRolesInsert(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 func HandleRolesUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	var req struct {
-		ID       uint   `json:"id"`
-		RoleName string `json:"role_name"`
+		ID          uint   `json:"id"`
+		RoleName    string `json:"role_name"`
+		Description string `json:"description"`
+		UserCount   *int   `json:"user_count"`
+		Permissions string `json:"permissions"`
 	}
 
 	if err := json.Unmarshal(data, &req); err != nil {
@@ -162,6 +165,15 @@ func HandleRolesUpdate(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	// Update fields if provided
 	if req.RoleName != "" {
 		m.RoleName = req.RoleName
+	}
+	if req.Description != "" {
+		m.Description = req.Description
+	}
+	if req.UserCount != nil {
+		m.UserCount = *req.UserCount
+	}
+	if req.Permissions != "" {
+		m.Permissions = req.Permissions
 	}
 
 	// Save the updated record

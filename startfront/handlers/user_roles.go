@@ -110,7 +110,7 @@ func HandleUser_rolesList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 
 	// Fetch the records with pagination and preload related data
 	var items []models.User_roles
-	if err := q.Preload("User").Preload("Role").Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Preload("User").Preload("Role").Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}

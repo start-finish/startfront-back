@@ -30,10 +30,12 @@ var initCmd = &cobra.Command{
 		fmt.Println("\nNext steps:")
 		fmt.Println("  cd", projectName)
 		fmt.Println("  go mod init", projectName)
-		fmt.Println("  go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/postgres")
+		fmt.Println("  go get github.com/gin-gonic/gin gorm.io/gorm gorm.io/driver/postgres github.com/gin-contrib/cors")
 		fmt.Println("  go install github.com/cosmtrek/air@latest")
 		fmt.Println("  export PATH=$PATH:$(go env GOPATH)/bin")
 		fmt.Println("  air   # hot-reloads server on save")
+		fmt.Println("")
+		fmt.Println("  📚 Swagger UI: http://localhost:8080/swagger/index.html")
 	},
 }
 
@@ -42,6 +44,7 @@ func createProjectStructure(name string) error {
 	dirs := []string{
 		filepath.Join(name, "cmd", "server"),
 		filepath.Join(name, "config"),
+		filepath.Join(name, "docs"),
 		filepath.Join(name, "handlers"),
 		filepath.Join(name, "models"),
 		filepath.Join(name, "router"),
@@ -56,10 +59,12 @@ func createProjectStructure(name string) error {
 	mainFile := fmt.Sprintf(`package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/gin-gonic/gin"
 	"%s/config"
+	"%s/docs"
 	"%s/models"
 	"%s/router"
 )
@@ -77,11 +82,14 @@ func main() {
 
 	r := gin.Default()
 	router.SetupRoutes(r, db)
+	docs.SetupSwagger(r)
+
+	fmt.Println("📚 Swagger UI: http://localhost:8080/swagger/index.html")
 	if err := r.Run(":8080"); err != nil {
 		log.Fatal(err)
 	}
 }
-`, name, name, name)
+`, name, name, name, name)
 	if err := os.WriteFile(filepath.Join(name, "cmd", "server", "main.go"), []byte(mainFile), 0o644); err != nil {
 		return fmt.Errorf("write main.go: %w", err)
 	}
@@ -194,6 +202,233 @@ clear_on_rebuild = true
 		return fmt.Errorf("write .gitignore: %w", err)
 	}
 
+	// Write docs/swagger.go (base Swagger spec with User schema)
+	// Write docs/swagger.go (base Swagger spec)
+	swaggerFile := fmt.Sprintf(`package docs
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+)
+
+// ---- OpenAPI 3.0 Spec Types ----
+
+type OpenAPISpec struct {
+	OpenAPI    string                ` + "`" + `json:"openapi"` + "`" + `
+	Info       Info                  ` + "`" + `json:"info"` + "`" + `
+	Servers    []Server              ` + "`" + `json:"servers,omitempty"` + "`" + `
+	Paths      map[string]PathItem   ` + "`" + `json:"paths"` + "`" + `
+	Components *Components           ` + "`" + `json:"components,omitempty"` + "`" + `
+	Tags       []Tag                 ` + "`" + `json:"tags,omitempty"` + "`" + `
+}
+
+type Info struct {
+	Title       string ` + "`" + `json:"title"` + "`" + `
+	Description string ` + "`" + `json:"description"` + "`" + `
+	Version     string ` + "`" + `json:"version"` + "`" + `
+}
+
+type Server struct {
+	URL         string ` + "`" + `json:"url"` + "`" + `
+	Description string ` + "`" + `json:"description,omitempty"` + "`" + `
+}
+
+type Tag struct {
+	Name        string ` + "`" + `json:"name"` + "`" + `
+	Description string ` + "`" + `json:"description,omitempty"` + "`" + `
+}
+
+type PathItem struct {
+	Post *Operation ` + "`" + `json:"post,omitempty"` + "`" + `
+}
+
+type Operation struct {
+	Tags        []string            ` + "`" + `json:"tags,omitempty"` + "`" + `
+	Summary     string              ` + "`" + `json:"summary"` + "`" + `
+	Description string              ` + "`" + `json:"description,omitempty"` + "`" + `
+	OperationID string              ` + "`" + `json:"operationId"` + "`" + `
+	RequestBody *RequestBody        ` + "`" + `json:"requestBody,omitempty"` + "`" + `
+	Responses   map[string]Response ` + "`" + `json:"responses"` + "`" + `
+}
+
+type RequestBody struct {
+	Required bool             ` + "`" + `json:"required"` + "`" + `
+	Content  map[string]Media ` + "`" + `json:"content"` + "`" + `
+}
+
+type Media struct {
+	Schema   SchemaRef          ` + "`" + `json:"schema"` + "`" + `
+	Examples map[string]Example ` + "`" + `json:"examples,omitempty"` + "`" + `
+}
+
+type Example struct {
+	Summary     string      ` + "`" + `json:"summary,omitempty"` + "`" + `
+	Description string      ` + "`" + `json:"description,omitempty"` + "`" + `
+	Value       interface{} ` + "`" + `json:"value"` + "`" + `
+}
+
+type Response struct {
+	Description string           ` + "`" + `json:"description"` + "`" + `
+	Content     map[string]Media ` + "`" + `json:"content,omitempty"` + "`" + `
+}
+
+type SchemaRef struct {
+	Ref        string              ` + "`" + `json:"$ref,omitempty"` + "`" + `
+	Type       string              ` + "`" + `json:"type,omitempty"` + "`" + `
+	Properties map[string]Property ` + "`" + `json:"properties,omitempty"` + "`" + `
+	Required   []string            ` + "`" + `json:"required,omitempty"` + "`" + `
+	Items      *SchemaRef          ` + "`" + `json:"items,omitempty"` + "`" + `
+	Example    interface{}         ` + "`" + `json:"example,omitempty"` + "`" + `
+}
+
+type Property struct {
+	Type        string      ` + "`" + `json:"type,omitempty"` + "`" + `
+	Format      string      ` + "`" + `json:"format,omitempty"` + "`" + `
+	Description string      ` + "`" + `json:"description,omitempty"` + "`" + `
+	Example     interface{} ` + "`" + `json:"example,omitempty"` + "`" + `
+	Ref         string      ` + "`" + `json:"$ref,omitempty"` + "`" + `
+	Items       *SchemaRef  ` + "`" + `json:"items,omitempty"` + "`" + `
+}
+
+type Components struct {
+	Schemas map[string]SchemaRef ` + "`" + `json:"schemas"` + "`" + `
+}
+
+func buildSpec() OpenAPISpec {
+	spec := OpenAPISpec{
+		OpenAPI: "3.0.3",
+		Info: Info{
+			Title:       "%[1]s API",
+			Description: "All requests go through a single endpoint ` + "`" + `POST /api/startProcess` + "`" + ` with a JSON body ` + "`" + `{\"msgId\": \"...\", \"data\": {...}}` + "`" + `.\n\nUse the **Request Body Examples** dropdown below to select and try different operations (msgIds).",
+			Version:     "1.0.0",
+		},
+		Servers: []Server{
+			{URL: "http://localhost:8080", Description: "Local dev server"},
+		},
+		Paths:      map[string]PathItem{},
+		Components: &Components{Schemas: map[string]SchemaRef{}},
+	}
+
+	// Initialize the single shared operation
+	examples := map[string]Example{}
+	spec.Paths["/api/startProcess"] = PathItem{
+		Post: &Operation{
+			Tags:        []string{"API Processes"},
+			Summary:     "Start Process (Master Endpoint)",
+			Description: "This single endpoint handles all application processes based on the ` + "`" + `msgId` + "`" + ` provided in the request body.",
+			OperationID: "startProcess",
+			RequestBody: &RequestBody{
+				Required: true,
+				Content: map[string]Media{
+					"application/json": {
+						Schema: SchemaRef{
+							Type: "object",
+							Properties: map[string]Property{
+								"msgId": {Type: "string", Description: "The unique identifier for the operation"},
+								"data":  {Type: "object", Description: "The payload for the operation"},
+							},
+						},
+						Examples: examples,
+					},
+				},
+			},
+			Responses: standardResponses(),
+		},
+	}
+
+	// >>> SWAGGER_RESOURCES_START <<<
+	// (create-api will inject resource documentation here)
+	// >>> SWAGGER_RESOURCES_END <<<
+
+	return spec
+}
+
+func addExample(examples map[string]Example, tag, key, summary, desc string, value interface{}) {
+	examples[key] = Example{
+		Summary:     "[" + tag + "] " + summary,
+		Description: desc,
+		Value:       value,
+	}
+}
+
+func standardResponses() map[string]Response {
+	return map[string]Response{
+		"200": {
+			Description: "Success",
+			Content: map[string]Media{
+				"application/json": {
+					Schema: SchemaRef{
+						Type: "object",
+						Properties: map[string]Property{
+							"code":    {Type: "string", Example: "0"},
+							"status":  {Type: "string", Example: "Success"},
+							"message": {Type: "string"},
+							"data":    {Type: "object"},
+						},
+					},
+				},
+			},
+		},
+		"400": {Description: "Bad request / validation error"},
+		"404": {Description: "Record not found"},
+		"500": {Description: "Internal server error"},
+	}
+}
+
+const swaggerUIHTML = ` + "`" + `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>API — Swagger UI</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css" />
+  <style>
+    html { box-sizing: border-box; overflow-y: scroll; }
+    *, *::before, *::after { box-sizing: inherit; }
+    body { margin: 0; background: #fafafa; }
+  </style>
+</head>
+<body>
+  <div id="swagger-ui"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: '/swagger/doc.json',
+      dom_id: '#swagger-ui',
+      deepLinking: true,
+      presets: [SwaggerUIBundle.presets.apis, SwaggerUIBundle.SwaggerUIStandalonePreset],
+      layout: 'BaseLayout',
+    });
+  </script>
+</body>
+</html>` + "`" + `
+
+func SetupSwagger(r *gin.Engine) {
+	spec := buildSpec()
+
+	r.GET("/swagger/doc.json", func(c *gin.Context) {
+		c.JSON(http.StatusOK, spec)
+	})
+	r.GET("/swagger/index.html", func(c *gin.Context) {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", []byte(swaggerUIHTML))
+	})
+	r.GET("/swagger", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+	})
+	r.GET("/swagger/", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/swagger/index.html")
+	})
+	r.GET("/swagger/spec", func(c *gin.Context) {
+		data, _ := json.MarshalIndent(spec, "", "  ")
+		c.Data(http.StatusOK, "application/json", data)
+	})
+}
+`, name)
+	if err := os.WriteFile(filepath.Join(name, "docs", "swagger.go"), []byte(swaggerFile), 0o644); err != nil {
+		return fmt.Errorf("write docs/swagger.go: %w", err)
+	}
+
 	return nil
 }
 
@@ -214,6 +449,10 @@ var createApiCmd = &cobra.Command{
 		}
 		if err := updateRouter(apiName); err != nil {
 			fmt.Println("❌ update router error:", err)
+			os.Exit(1)
+		}
+		if err := updateSwagger(apiName); err != nil {
+			fmt.Println("❌ update swagger error:", err)
 			os.Exit(1)
 		}
 		fmt.Println("✅ API", apiName, "created successfully")
@@ -284,6 +523,8 @@ func Handle%[2]sGet(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
+	// m.PasswordField = "" // TODO: Sanitize sensitive fields if any
+
 	// Return the record
 	c.JSON(http.StatusOK, gin.H{
 		"code":    "0",
@@ -326,7 +567,7 @@ func Handle%[2]sList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	var items []models.%[2]s
-	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
@@ -614,6 +855,49 @@ func readModuleName(dir string) string {
 		}
 	}
 	return ""
+}
+
+// updateSwagger injects a new resource's documentation into docs/swagger.go
+func updateSwagger(name string) error {
+	swaggerPath := filepath.Join("docs", "swagger.go")
+	data, err := os.ReadFile(swaggerPath)
+	if err != nil {
+		// swagger.go not found — skip silently (project may not have been init'd with swagger)
+		return nil
+	}
+	content := string(data)
+
+	title := strings.Title(name)
+	upName := strings.ToUpper(name)
+
+	// Check if already registered
+	if strings.Contains(content, `"`+upName+`"`) {
+		return nil // already registered
+	}
+
+	// Build the addExample calls to inject
+	newResource := fmt.Sprintf(`
+	// %s API
+	addExample(examples, "%s", "%s_get", "%s — Get by ID", "Fetch a single record by id.", map[string]interface{}{"msgId": "%s_get", "data": map[string]interface{}{"id": 1}})
+	addExample(examples, "%s", "%s_list", "%s — List all", "Paginated list.", map[string]interface{}{"msgId": "%s_list", "data": map[string]interface{}{"page": 1, "limit": 10}})
+	addExample(examples, "%s", "%s_create", "%s — Create", "Insert a new record.", map[string]interface{}{"msgId": "%s_create", "data": map[string]interface{}{"name": "%s"}})
+	addExample(examples, "%s", "%s_update", "%s — Update", "Update an existing record by id.", map[string]interface{}{"msgId": "%s_update", "data": map[string]interface{}{"id": 1, "name": "%s"}})
+	addExample(examples, "%s", "%s_delete", "%s — Delete", "Delete a record by id.", map[string]interface{}{"msgId": "%s_delete", "data": map[string]interface{}{"id": 1}})
+`, upName, title, upName, title, upName, title, upName, title, upName, title, upName, title, upName, name, title, upName, title, upName, name, title, upName, title, upName)
+
+	// Insert before the SWAGGER_RESOURCES_END marker
+	const marker = "// >>> SWAGGER_RESOURCES_END <<<"
+	idx := strings.Index(content, marker)
+	if idx == -1 {
+		return fmt.Errorf("swagger marker not found in docs/swagger.go")
+	}
+
+	content = content[:idx] + newResource + "\t" + content[idx:]
+
+	if err := os.WriteFile(swaggerPath, []byte(content), 0o644); err != nil {
+		return fmt.Errorf("write docs/swagger.go: %w", err)
+	}
+	return nil
 }
 
 func main() {

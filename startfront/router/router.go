@@ -2,6 +2,7 @@ package router
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"startfront/handlers"
 
@@ -156,9 +157,12 @@ var MsgHandlers = map[string]MsgHandler{
 	// USERS API
 	"login":        handlers.HandleLogin,
 	"sign_up":      handlers.HandleSignUp,
+	"USERS_create": handlers.HandleSignUp,
 	"USERS_list":   handlers.HandleUsersList,
 	"USERS_update": handlers.HandleUsersUpdate,
 	"USERS_delete": handlers.HandleUsersDelete,
+	"USERS_count":  handlers.HandleUsersCount,
+	"change_password": handlers.HandleChangePassword,
 }
 
 func SetupRoutes(r *gin.Engine, db *gorm.DB) {
@@ -173,14 +177,17 @@ func SetupRoutes(r *gin.Engine, db *gorm.DB) {
 	r.POST("/api/startProcess", func(c *gin.Context) {
 		var req Request
 		if err := c.ShouldBindJSON(&req); err != nil {
+			fmt.Printf("DEBUG: Failed to bind JSON: %v\n", err)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "error",
 				"error":  "Invalid JSON",
 			})
 			return
 		}
+		fmt.Printf("DEBUG: Received msgId: %s\n", req.MsgID)
 		handler, exists := MsgHandlers[req.MsgID]
 		if !exists {
+			fmt.Printf("DEBUG: msgId not found in MsgHandlers: %s\n", req.MsgID)
 			c.JSON(http.StatusBadRequest, gin.H{
 				"status": "error",
 				"error":  "Unknown msgId",

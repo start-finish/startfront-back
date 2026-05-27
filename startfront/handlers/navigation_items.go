@@ -90,7 +90,7 @@ func HandleNavigation_itemsList(db *gorm.DB, data json.RawMessage, c *gin.Contex
 	}
 
 	var items []models.Navigation_items
-	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}

@@ -95,7 +95,7 @@ func HandleProjectsList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	}
 
 	var items []models.Projects
-	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}

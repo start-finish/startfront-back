@@ -125,7 +125,7 @@ func HandleWidgetsList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 	// Fetch paginated items
 	offset := (page - 1) * limit
 	var items []models.Widgets
-	if err := q.Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"code":   "1",
 			"status": "error",
@@ -140,6 +140,7 @@ func HandleWidgetsList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		Control int `json:"control"`
 		Input   int `json:"input"`
 		Layout  int `json:"layout"`
+		Display int `json:"display"`
 	}
 
 	var counts CountResult
@@ -148,7 +149,8 @@ func HandleWidgetsList(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 			COUNT(*) AS total,
 			COUNT(*) FILTER (WHERE category = 'control') AS control,
 			COUNT(*) FILTER (WHERE category = 'input') AS input,
-			COUNT(*) FILTER (WHERE category = 'layout') AS layout
+			COUNT(*) FILTER (WHERE category = 'layout') AS layout,
+			COUNT(*) FILTER (WHERE category = 'display') AS display
 		FROM widgets
 	`).Scan(&counts)
 
@@ -369,19 +371,53 @@ func HandleWidgetsDelete(db *gorm.DB, data json.RawMessage, c *gin.Context) {
 		return
 	}
 
-	res := db.Delete(&models.Widgets{}, req.ID)
-	if res.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": res.Error.Error()})
-		return
-	}
-	if res.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
-		return
-	}
+	// Check if the widget is being referenced in widget_instances
+	var count int64
+	db.Model(&models.Widget_instances{}).Where("widget_id = ?", req.ID).Count(&count)
+	if count > 0 {
+		// Delete references from widget_instances first
+		res := db.Where("widget_id = ?", req.ID).Delete(&models.Widget_instances{})
+		if res.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": res.Error.Error()})
+			return
+		}
 
-	c.JSON(http.StatusOK, gin.H{
-		"code":    "0",
-		"status":  "Success",
-		"message": "Widget deleted",
-	})
+		// Alternatively, update references to NULL instead of deleting:
+		// res := db.Model(&models.WidgetInstances{}).Where("widget_id = ?", req.ID).Update("widget_id", nil)
+
+		// Now proceed with deleting the widget
+		res = db.Delete(&models.Widgets{}, req.ID)
+		if res.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": res.Error.Error()})
+			return
+		}
+
+		if res.RowsAffected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"code":    "0",
+			"status":  "Success",
+			"message": "Widget deleted",
+		})
+	} else {
+		// If no references exist, delete the widget directly
+		res := db.Delete(&models.Widgets{}, req.ID)
+		if res.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": res.Error.Error()})
+			return
+		}
+		if res.RowsAffected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"code": "1", "status": "error", "error": "record not found"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"code":    "0",
+			"status":  "Success",
+			"message": "Widget deleted",
+		})
+	}
 }

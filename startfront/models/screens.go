@@ -6,7 +6,7 @@ import "time"
 type Screens struct {
 	ID          uint      `json:"id" gorm:"primaryKey"`
 	Name        string    `json:"name"`
-	RoutePath   string    `json:"route_path"`
+	RoutePath   string    `json:"route_path" gorm:"uniqueIndex"`
 	Description string    `json:"description"`
 	IsActive    string    `json:"is_active" gorm:"default:'0'"`
 	CreatedBy   string    `json:"created_by"`

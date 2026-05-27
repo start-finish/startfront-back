@@ -102,7 +102,7 @@ func HandleRole_permissionsList(db *gorm.DB, data json.RawMessage, c *gin.Contex
 	}
 
 	var items []models.Role_permissions
-	if err := q.Preload("Role").Preload("Permission").Order("id ASC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
+	if err := q.Preload("Role").Preload("Permission").Order("id DESC").Limit(limit).Offset(offset).Find(&items).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"code": "1", "status": "error", "error": err.Error()})
 		return
 	}
